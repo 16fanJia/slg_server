@@ -1,18 +1,37 @@
 package util
 
 import (
-	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestAesCBCEncrypt(t *testing.T) {
-	src := "加密功能测试"
-	key := "123456781234567812345678"
-	fmt.Println("原文：", src)
+	testCases := []struct {
+		name        string
+		src         []byte
+		key         []byte
+		paddingMode string
 
-	encryptCode, _ := AesCBCEncrypt([]byte(src), []byte(key), PKCS7_PADDING)
-	fmt.Println("密文：", encryptCode)
+		wantRes string
+		wantErr error
+	}{
+		{
+			name:        "cbcEncrypt",
+			src:         []byte("加密测试数据"),
+			key:         []byte("1234567812345678"),
+			paddingMode: PKCS7_PADDING,
+			wantErr:     nil,
+		},
+	}
 
-	decryptCode, _ := AesCBCDecrypt(encryptCode, []byte(key), PKCS7_PADDING)
-	fmt.Println("解密结果：", string(decryptCode))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := AesCBCEncrypt(tc.src, tc.key, tc.paddingMode)
+			assert.Equal(t, tc.wantErr, err)
+			if err != nil {
+				return
+			}
+		})
+	}
+
 }

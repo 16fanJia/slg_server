@@ -3,6 +3,7 @@ package net
 import (
 	"github.com/gorilla/websocket"
 	"net/http"
+	router2 "slg_server/router"
 )
 
 /*
@@ -18,7 +19,7 @@ var wsUpgrader = websocket.Upgrader{
 //Server net 链接服务
 type Server struct {
 	addr        string
-	router      *Router
+	router      *router2.Router
 	needSecret  bool
 	beforeClose func(WSConnIface)
 }
@@ -36,7 +37,7 @@ func (s *Server) SetBeforeCloseFunc(hookFunc func(WSConnIface)) {
 }
 
 //RegisterRouter 注册路由函数
-func (s *Server) RegisterRouter(router *Router) {
+func (s *Server) RegisterRouter(router *router2.Router) {
 	s.router = router
 }
 

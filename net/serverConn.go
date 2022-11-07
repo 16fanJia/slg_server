@@ -136,11 +136,13 @@ func (sc *ServerConn) wsReadLoop() {
 				Seq:  body.Seq,
 				Name: body.Name,
 			}}
+			//TODO 后续是否可以将req 和 resp 封装到 context 中
 
 			//判断是否为心跳消息
 			if body.Name == HeartbeatMsg {
 				h := &Heartbeat{}
-				//将 body中的msg字段 解析为h
+				//TODO 将 body中的msg字段 解析为h
+
 				h.STime = time.Now().UnixNano() / 1e6
 				resp.Body.Msg = h
 			} else {
