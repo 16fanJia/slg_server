@@ -29,6 +29,23 @@ func (ctx *Context) SetHandlers(handlers []HandlerFunc) {
 	ctx.handlers = handlers
 }
 
+func (ctx *Context) SetReq(req *net.WsMsgReq) {
+	ctx.req = req
+}
+
+func (ctx *Context) SetResp(resp *net.WsMsgResp) {
+	ctx.resp = resp
+}
+
+func (ctx *Context) GetResp() *net.WsMsgResp {
+	return ctx.resp
+}
+
+func (ctx *Context) Reset() {
+	ctx.handlers = nil
+	ctx.idx = -1
+}
+
 //Next 调用context的下一个函数
 func (ctx *Context) Next() {
 	ctx.idx++

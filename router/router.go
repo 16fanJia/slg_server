@@ -1,7 +1,5 @@
 package router
 
-import "slg_server/net"
-
 /*
 ==============路由模块===================
 */
@@ -37,7 +35,7 @@ func (r *Router) Group(prefix string, middlewareFunc ...HandlerFunc) *Group {
 	return group
 }
 
-func (r *Router) Run(req *net.WsMsgReq, resp *net.WsMsgResp) {
+func (r *Router) Run(c *Context) {
 	//就是找到路由树中的handler 处理请求
 
 }

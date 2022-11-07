@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
+	router2 "slg_server/router"
 	"slg_server/util"
 	"sync"
 	"time"
@@ -21,7 +22,7 @@ type ServerConn struct {
 	property     map[string]interface{} //链接属性
 	propertyLock sync.RWMutex           //保护链接属性读取和修改的锁
 	isClosed     bool                   //链接是否关闭
-	outChan      chan *WsMsgResp        //协程之间通信 写数据
+	outChan      chan *router2.Context  //协程之间通信 写数据
 	beforeClose  func(WSConnIface)      //关闭连接之前的函数
 }
 
@@ -33,7 +34,7 @@ func NewServerConn(s *Server, conn *websocket.Conn, needSecret bool) *ServerConn
 		needSecret: needSecret,
 		property:   make(map[string]interface{}),
 		isClosed:   false,
-		outChan:    make(chan *WsMsgResp, 1000), // buffed channel
+		outChan:    make(chan *router2.Context, 1000), // buffed channel
 	}
 }
 
@@ -69,14 +70,17 @@ func (sc *ServerConn) GetAddr() string {
 }
 
 //Push 用于向通道中发送数据
-func (sc *ServerConn) Push(name string, data interface{}) {
-	resp := &WsMsgResp{Body: &RespBody{
-		Seq:  0,
-		Name: name,
-		Msg:  data,
-	}}
-	sc.outChan <- resp
-}
+//func (sc *ServerConn) Push(name string, data interface{}) {
+//	resp := &WsMsgResp{Body: &RespBody{
+//		Seq:  0,
+//		Name: name,
+//		Msg:  data,
+//	}}
+//
+//
+//
+//	sc.outChan <- resp
+//}
 
 //Start 开启异步 读数据 和 写数据
 func (sc *ServerConn) Start() {
@@ -138,6 +142,10 @@ func (sc *ServerConn) wsReadLoop() {
 			}}
 			//TODO 后续是否可以将req 和 resp 封装到 context 中
 
+			c := sc.server.pool.Get().(*router2.Context)
+			c.SetReq(req)
+			c.SetResp(resp)
+
 			//判断是否为心跳消息
 			if body.Name == HeartbeatMsg {
 				h := &Heartbeat{}
@@ -148,10 +156,10 @@ func (sc *ServerConn) wsReadLoop() {
 			} else {
 				//处理请求
 				if sc.server.router != nil {
-					sc.server.router.Run(req, resp)
+					sc.server.router.Run(c)
 				}
 			}
-			sc.outChan <- resp
+			sc.outChan <- c
 		} else {
 			fmt.Println("unmarshal error ", err)
 			sc.Handshake()
@@ -171,15 +179,18 @@ func (sc *ServerConn) wsWriteLoop() {
 	for {
 		select {
 		//取一个数据
-		case msg := <-sc.outChan:
+		case context := <-sc.outChan:
 			//写给websocket
-			sc.write(msg)
+			sc.write(context)
+			//一个请求处理完成 将context 放入pool中
+			context.Reset()
+			sc.server.pool.Put(context)
 		}
 	}
 }
 
-func (sc *ServerConn) write(msg interface{}) {
-	data, err := json.Marshal(msg)
+func (sc *ServerConn) write(ctx *router2.Context) {
+	data, err := json.Marshal(ctx.GetResp())
 	if err != nil {
 		return
 	}

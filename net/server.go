@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	router2 "slg_server/router"
+	"sync"
 )
 
 /*
@@ -22,13 +23,18 @@ type Server struct {
 	router      *router2.Router
 	needSecret  bool
 	beforeClose func(WSConnIface)
+	pool        sync.Pool
 }
 
 func NewServer(addr string, needSecret bool) *Server {
-	return &Server{
+	s := &Server{
 		addr:       addr,
 		needSecret: needSecret,
 	}
+	s.pool.New = func() any {
+		return &router2.Context{}
+	}
+	return s
 }
 
 //SetBeforeCloseFunc 设置服务器的before close hook func
