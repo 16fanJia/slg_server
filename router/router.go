@@ -37,5 +37,6 @@ func (r *Router) Group(prefix string, middlewareFunc ...HandlerFunc) *Group {
 
 func (r *Router) Run(c *Context) {
 	//就是找到路由树中的handler 处理请求
+	_ = r.routerTree.findHandler(c.req.Body.Name)
 
 }

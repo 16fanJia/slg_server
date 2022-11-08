@@ -28,6 +28,26 @@ func newTree() *tree {
 	}
 }
 
+//findHandler 根据path 寻找 handler
+func (t *tree) findHandler(path string) []HandlerFunc {
+	//拆分path ' /account/name ' 去除最前面的 /
+	if strings.HasPrefix(path, "/") {
+		path = strings.TrimPrefix(path, "/")
+		//路由不区分大小写
+		path = strings.ToLower(path)
+	} else {
+		//打日志 并且退出
+		fmt.Println("路由路径格式错误！")
+		return nil
+	}
+
+	matchNode := t.root.matchNode(path)
+	if matchNode == nil {
+		return nil
+	}
+	return matchNode.handlers
+}
+
 //add 路由树中添加路由
 func (t *tree) addRouter(path string, handlerFunc ...HandlerFunc) {
 	n := t.root
@@ -112,4 +132,33 @@ func (n *node) matchChildNode(seg string) []*node {
 		}
 	}
 	return nodes
+}
+
+//matchNode 根据path 寻找节点
+func (n *node) matchNode(path string) *node {
+	segments := strings.SplitN(path, "/", 2)
+	segment := segments[0]
+	//匹配对应的节点
+	cNode := n.matchChildNode(segment)
+	//未找到对应的节点
+	if cNode == nil || len(cNode) == 0 {
+		return nil
+	}
+	//如果只有一个
+	if len(segments) == 1 {
+		for _, vn := range cNode {
+			if vn.isLast {
+				return vn
+			}
+		}
+		//都不是最终的节点
+		return nil
+	}
+	for _, vn := range cNode {
+		mNode := vn.matchNode("/" + segments[1])
+		if mNode != nil {
+			return mNode
+		}
+	}
+	return nil
 }
